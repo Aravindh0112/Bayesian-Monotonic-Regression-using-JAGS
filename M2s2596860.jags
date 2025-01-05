@@ -1,0 +1,50 @@
+
+     # Defining the updated Bayesian model with same set of
+     # hyperparameters
+
+model {
+     # Initialization of the prior parameters tau and tau_o
+     tau ~ dgamma(4,0.04)
+     tau_o ~ dgamma(4,0.04)
+     
+     # Calculating x values by iterating through each experiment
+     for (j in 1:n_experiments) {
+     
+     # Initializing x[1,j] and x[2,j] with normal distributions
+       x[1,j] ~ dnorm(0,100)
+       x[2,j] ~ dnorm(x[1,j],tau)
+       
+       #Iterating through remaining doses for each experiment
+       for (i in 3:n_doses) {
+         x[i,j] ~ dnorm(2* x[i-1,j] - x[i-2,j],tau)
+        }
+      }
+    
+    # Calculating m and mu values for each experiment and dose
+    for(j in 1:n_experiments) {
+      m[1,j] <- 0
+      mu[1,j] <- 1
+      
+      # Iterating through doses for each experiment to
+      # calculate m and mu values
+      for (i in 2:n_doses) {
+        m[i,j] <- m[i-1,j]-exp(x[i-1,j])
+        mu[i,j] <- exp(m[i,j])
+      }
+    }
+    
+    # Modelling the effect for each dose in every experiment
+    for (j in 1:n_experiments) {
+    
+    # Prior for Mj parameter following an uniform distribution
+      Mj[j] ~ dunif(0,4000) 
+      for (i in 1:n_doses) {
+      
+      # Model for effect[i,j] for each experiment and dose
+        effect[i,j] ~ dnorm(Mj[j] * mu[i,j] , tau_o)
+    }
+  }
+}
+     
+     
+    

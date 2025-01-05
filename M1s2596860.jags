@@ -1,0 +1,45 @@
+
+     # Defining the Bayesian model
+model {
+
+     # Prior distribution for Mj (expected effect at zero dose)
+     for( j in 1:n_experiments) {
+        Mj[j] ~ dunif(0,4000) # Prior for Mj for each experiment
+     }
+     
+     # Prior for the precision parameters
+     tau ~ dgamma(4,0.04) # Prior for the tau parameter
+     tau_o ~ dgamma(4,0.04) # Prior for the tau_o parameter
+     
+     # Defining and modulating latent variable x
+     x[1] ~ dnorm(0,100)  # Initial value of x[1]
+     x[2] ~ dnorm(x[1],tau) # Initial value of x[2]
+     
+     # Calculation of x_values for the rest of the dosages
+     for (i in 3:n_doses) {
+       x[i] ~ dnorm(2*x[i-1] - x[i-2],tau)
+    }
+    
+    # Calculation of m and mu values
+     m[1] <- 0   # Initial value of m[1]
+     mu[1] <- 1  # Initial value of mu[1]
+    
+    # Subsequent calculation of m and mu values (i>=2)
+     for (i in 2:n_doses) {
+       m[i] <- m[i-1]-exp(x[i-1])
+       mu[i] <- exp(m[i])
+    }
+  
+    # Modelling the measured effect at each dose level
+    # for each experiment
+    for (j in 1:n_experiments) {
+      for (i in 1:n_doses) {
+    
+      # Model for effect[i,j] at dose level i for experiment j
+        effect[i,j] ~ dnorm(Mj[j] * mu[i] , tau_o)
+    }
+  }
+}
+     
+     
+    
